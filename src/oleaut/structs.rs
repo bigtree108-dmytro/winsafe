@@ -59,7 +59,10 @@ impl BSTR {
 	#[must_use]
 	pub fn SysAllocString(s: &str) -> HrResult<Self> {
 		let str_obj = WString::from_str(s);
-		let ptr = unsafe { ffi::SysAllocString(str_obj.as_ptr()) };
+		// An empty WString holds no buffer, and SysAllocString(NULL) returns
+		// NULL, the same as an allocation failure. SysAllocStringLen(NULL, 0)
+		// returns a zero-length BSTR, and NULL only when out of memory.
+		let ptr = unsafe { ffi::SysAllocStringLen(str_obj.as_ptr(), str_obj.str_len() as _) };
 		if ptr.is_null() { Err(co::HRESULT::E_OUTOFMEMORY) } else { Ok(Self(ptr)) }
 	}
 
